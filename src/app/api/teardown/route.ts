@@ -11,15 +11,27 @@
  */
 
 import { NextRequest } from "next/server";
-import { createFirmScopeAgent, RECURSION_LIMIT } from "@/lib/agent";
-import { normalizeUrl } from "@/lib/agent/crawl";
-import { createRunContext, type EmitKind } from "@/lib/agent/tools";
+import { normalizeUrl } from "@/lib/agent/url";
+import type { EmitKind } from "@/lib/agent/tools";
 import {
   completeTeardownRow,
   createTeardownRow,
   failTeardownRow,
   recordEvent,
 } from "@/lib/supabase/server";
+
+/**
+ * The agent module graph (deepagents, LangChain, cheerio) is imported lazily
+ * inside the request handler rather than at module scope. A module-scope
+ * failure here is uncatchable — Next returns a bare HTTP 500 with no body, and
+ * the UI can only say "something went wrong". Loading it inside the try turns
+ * the same failure into a message that names the missing module.
+ */
+async function loadAgent() {
+  const [{ createFirmScopeAgent, RECURSION_LIMIT }, { createRunContext }] =
+    await Promise.all([import("@/lib/agent"), import("@/lib/agent/tools")]);
+  return { createFirmScopeAgent, RECURSION_LIMIT, createRunContext };
+}
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -84,22 +96,33 @@ export async function POST(req: NextRequest) {
       };
 
       // Create the row up front so a run that dies mid-flight still leaves a
-      // record we can mark failed.
-      const teardownId = await createTeardownRow({ firmUrl, city, practiceArea });
-      send({ type: "start", teardownId, firmUrl, city, practiceArea });
-
-      const ctx = createRunContext(firmUrl, city, practiceArea, () => {});
-
-      ctx.emit = (kind: EmitKind, label: string, payload?: unknown) => {
-        seq += 1;
-        send({ type: "event", seq, kind, label, payload });
-        if (teardownId) {
-          // Fire-and-forget: persistence must never stall the run.
-          void recordEvent(teardownId, seq, kind, label, payload).catch(() => {});
-        }
-      };
+      // record we can mark failed. Persistence failures must not abort the
+      // run, so this is inside the guard along with everything else.
+      let teardownId: string | null = null;
 
       try {
+        teardownId = await createTeardownRow({ firmUrl, city, practiceArea });
+      } catch (err) {
+        console.error("[teardown] could not create row:", err);
+      }
+
+      send({ type: "start", teardownId, firmUrl, city, practiceArea });
+
+      try {
+        const { createFirmScopeAgent, RECURSION_LIMIT, createRunContext } =
+          await loadAgent();
+
+        const ctx = createRunContext(firmUrl, city, practiceArea, () => {});
+
+        ctx.emit = (kind: EmitKind, label: string, payload?: unknown) => {
+          seq += 1;
+          send({ type: "event", seq, kind, label, payload });
+          if (teardownId) {
+            // Fire-and-forget: persistence must never stall the run.
+            void recordEvent(teardownId, seq, kind, label, payload).catch(() => {});
+          }
+        };
+
         const agent = createFirmScopeAgent(ctx);
 
         const agentStream = await agent.stream(
@@ -236,6 +259,9 @@ export async function POST(req: NextRequest) {
 
 /** Translate the failure modes users actually hit into plain language. */
 function friendlyError(message: string): string {
+  if (/Cannot find module|MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND/i.test(message)) {
+    return `The agent runtime failed to load on the server (${message}). This is a deployment/bundling problem rather than a problem with the firm's site.`;
+  }
   if (/429|quota|rate limit|RESOURCE_EXHAUSTED/i.test(message)) {
     return "Gemini's free-tier rate limit was hit mid-run. Wait about a minute and try again — the free tier allows a limited number of requests per minute.";
   }

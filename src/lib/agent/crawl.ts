@@ -14,23 +14,14 @@ import type {
   PageRecord,
   PageType,
 } from "./types";
+import { normalizeUrl } from "./url";
 
 const UA =
   "Mozilla/5.0 (compatible; FirmScopeBot/1.0; +https://firmscope.app/bot) AppleWebKit/537.36 Chrome/120 Safari/537.36";
 
 const FETCH_TIMEOUT_MS = 12_000;
 
-export function normalizeUrl(input: string): string {
-  let url = input.trim();
-  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
-  try {
-    const u = new URL(url);
-    u.hash = "";
-    return u.toString();
-  } catch {
-    throw new Error(`"${input}" is not a valid URL.`);
-  }
-}
+export { normalizeUrl } from "./url";
 
 interface DocResponse {
   ok: boolean;

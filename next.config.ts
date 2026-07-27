@@ -9,10 +9,12 @@ const nextConfig: NextConfig = {
     root: path.resolve(process.cwd()),
   },
 
-  // deepagents/langchain pull in optional deps they don't need at runtime.
-  // Leaving them external keeps them out of the bundle instead of failing
-  // the build on a module that is never actually imported.
-  serverExternalPackages: ["deepagents", "@langchain/langgraph", "cheerio"],
+  // NOTE: do not add deepagents/@langchain/* to serverExternalPackages.
+  // Marking them external tells Next not to bundle them, which leaves it to
+  // Vercel's file tracing to copy them into the lambda. That tracing misses
+  // parts of LangChain's dependency graph, so the route imported fine locally
+  // (node_modules present) and threw MODULE_NOT_FOUND in production — a bare
+  // HTTP 500 before any handler code ran. Letting Next bundle them fixes it.
 };
 
 export default nextConfig;

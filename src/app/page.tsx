@@ -21,7 +21,7 @@ const RUN_STEPS = [
   },
   {
     title: "Score",
-    body: "A weighted rubric turns the signals into a 0–100 score. It runs in code, not in the model, so the same site scores the same twice.",
+    body: "A weighted rubric turns the signals into a 0–100 score. It runs in code, not in the model, so the score is a pure function of what was measured — the model cannot talk it up or down.",
   },
   {
     title: "Draft",

@@ -39,8 +39,12 @@ partner who bills by the hour.
 
 Two consequences worth noting:
 
-- The score is **reproducible**. The same site scores the same twice, which is
-  what makes the number usable in a sales conversation.
+- The score is **reproducible**, in the sense that matters: the rubric is a pure
+  function of the signals, so identical signals always yield an identical score.
+  The model cannot nudge it. In practice consecutive runs on the same site land
+  within a couple of points (I measured 67 and 69), and the drift comes from
+  live measurement — server response time varies, and the crawler may sample a
+  slightly different page set — never from model sampling.
 - A free-tier model is enough. The hard part is measurement, and measurement is
   not the model's job.
 
@@ -146,11 +150,25 @@ enough for a full run; a typical run is 60–90s.
 ## Tradeoffs
 
 **Gemini free tier.** Chosen so the deployed demo is openly testable without
-shipping a paid key. The cost is rate limits (10–15 requests/min) and weaker
-long-horizon reasoning. The harness is shaped around that: measurement is
-deterministic, the run is ~12–18 model turns, and 429s surface as a plain-English
-message rather than a stack trace. `GEMINI_MODEL` is configurable if you want to
-trade quality for headroom.
+shipping a paid key. It cost more than expected, and the details are worth
+stating because they shaped the harness:
+
+- The free tier bills **per model, per day** — not only per minute. Full Flash
+  allows **20 requests/day**, and one teardown uses 15–20. The first run would
+  succeed and the second would die halfway. The default is therefore
+  `gemini-flash-lite-latest`, which has a much higher daily ceiling.
+- Pinned model versions rot. `gemini-2.5-flash` now returns *"no longer
+  available to new users"* for freshly created keys, so the default is a moving
+  alias rather than a version.
+- Calls are paced through a shared token bucket
+  ([`throttle.ts`](src/lib/agent/throttle.ts)) with exponential-backoff retry on
+  429, because the agent naturally bursts (three diagnostics fire at once, then
+  a subagent reads several pages).
+
+This is exactly why the harness pushes measurement into deterministic code: a
+lite model is entirely adequate when it is orchestrating tools and writing
+prose, and never asked to recall a fact. A paid key would remove the ceiling
+without changing the design.
 
 **Agent in the Next.js app, not a separate server.** Faster to build and deploy,
 one set of secrets. The limit is the serverless execution ceiling — a run that

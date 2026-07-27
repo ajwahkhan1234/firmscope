@@ -12,12 +12,25 @@ deployment. About 10 minutes total.
 3. Click **Create API key** → **Create API key in new project**.
 4. Copy the key (starts with `AIza...`).
 
-That is the free tier. No billing setup, no card. The limits are roughly 10–15
-requests per minute and a few hundred per day, which is fine for demoing —
-one teardown uses about 12–18 requests.
+That is the free tier — no billing setup, no card.
 
-> If you hit a rate-limit error mid-run, wait a minute and run it again, or set
-> `GEMINI_MODEL=gemini-2.0-flash` which has a higher per-minute allowance.
+> **Important:** create the key in a **new project**, not an existing Google
+> Cloud project. Keys made in an existing project often come back with
+> `limit: 0` free-tier quota and every request fails with a 429.
+
+**On quota.** The free tier bills per model **per day**, not just per minute.
+Full Flash allows only 20 requests/day and a single teardown uses 15–20, so it
+runs out almost immediately. This is why the default model is
+`gemini-flash-lite-latest`, which has a much higher daily ceiling. Leave it
+alone unless you have a paid key.
+
+If a run stops with a rate-limit message:
+
+- **"limit: 20 ... PerDay"** — you are on full Flash. Set
+  `GEMINI_MODEL=gemini-flash-lite-latest`.
+- **Per-minute limit** — lower `GEMINI_REQUESTS_PER_MINUTE` (default 8).
+- **`limit: 0`** — the key's project has no free-tier quota. Make a new key in a
+  brand-new project.
 
 ---
 

@@ -123,6 +123,11 @@ export async function POST(req: NextRequest) {
           }
         };
 
+        // The first model call is the planning turn, which can take 10-20s on
+        // a throttled free-tier model. Without this the docket sits empty and
+        // the run looks hung.
+        ctx.emit("note", `Planning the teardown for ${new URL(firmUrl).hostname}`);
+
         const agent = createFirmScopeAgent(ctx);
 
         const agentStream = await agent.stream(

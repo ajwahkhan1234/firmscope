@@ -1,0 +1,265 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+  FirmScope — "Evidence Room"
+
+  A teardown is an evidence record, so the interface is built like one:
+  a cold near-black room, warm vellum text (paper, not screen-white), and
+  brass as the dominant accent — law-library brass rather than a bright
+  SaaS accent. Severity is the only place saturated color appears, and it
+  runs on a functional ramp so hue always means the same thing.
+
+  The product is dark-only on purpose. There is no light theme to fall
+  back to, so :root carries the dark palette directly.
+*/
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-caslon);
+  --font-heading: var(--font-caslon);
+
+  /* Room */
+  --color-ink: #05070b;
+  --color-ink-raised: #0b0f16;
+  --color-ink-sunken: #04050a;
+  --color-ink-line: #1a212c;
+  --color-ink-line-bright: #2a3341;
+
+  /* Text */
+  --color-vellum: #e8e6e1;
+  --color-slate-soft: #8a93a1;
+  --color-slate-dim: #5b6472;
+
+  /* Accents */
+  --color-brass: #c8a45c;
+  --color-brass-dim: #8a7038;
+  --color-arc: #6e9bff;
+
+  /* Severity ramp — hue always means the same thing */
+  --color-critical: #d7452f;
+  --color-high: #e0913a;
+  --color-medium: #c8a45c;
+  --color-low: #8a93a1;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.35rem;
+
+  --background: #05070b;
+  --foreground: #e8e6e1;
+
+  --card: #0b0f16;
+  --card-foreground: #e8e6e1;
+  --popover: #0b0f16;
+  --popover-foreground: #e8e6e1;
+
+  --primary: #c8a45c;
+  --primary-foreground: #05070b;
+
+  --secondary: #141a24;
+  --secondary-foreground: #e8e6e1;
+
+  --muted: #141a24;
+  --muted-foreground: #8a93a1;
+
+  --accent: #1a212c;
+  --accent-foreground: #e8e6e1;
+
+  --destructive: #d7452f;
+
+  --border: #1a212c;
+  --input: #1a212c;
+  --ring: #c8a45c;
+
+  --chart-1: #c8a45c;
+  --chart-2: #6e9bff;
+  --chart-3: #d7452f;
+  --chart-4: #e0913a;
+  --chart-5: #8a93a1;
+
+  --sidebar: #080b11;
+  --sidebar-foreground: #e8e6e1;
+  --sidebar-primary: #c8a45c;
+  --sidebar-primary-foreground: #05070b;
+  --sidebar-accent: #141a24;
+  --sidebar-accent-foreground: #e8e6e1;
+  --sidebar-border: #1a212c;
+  --sidebar-ring: #c8a45c;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Faint vertical grain, like light falling across a dark room. */
+    background-image: radial-gradient(
+      110% 80% at 50% -10%,
+      rgba(110, 155, 255, 0.05) 0%,
+      transparent 60%
+    );
+  }
+
+  ::selection {
+    background: rgba(200, 164, 92, 0.28);
+    color: #fff;
+  }
+
+  /* Keyboard focus must stay visible everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--color-brass);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /*
+    The signature device: a ruled left margin with line numbers, borrowed
+    from US pleading paper. Used by both the live run docket and the
+    exhibit list, because in both cases the numbering is real ordering
+    information rather than decoration.
+  */
+  .docket {
+    counter-reset: docket-line;
+  }
+
+  .docket-line {
+    counter-increment: docket-line;
+    position: relative;
+    padding-left: 3.25rem;
+  }
+
+  .docket-line::before {
+    content: counter(docket-line, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.1rem;
+    width: 2rem;
+    text-align: right;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    letter-spacing: 0.05em;
+    color: var(--color-slate-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The margin rule itself. */
+  .docket-rule::after {
+    content: "";
+    position: absolute;
+    left: 2.5rem;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--color-ink-line-bright) 8%,
+      var(--color-ink-line-bright) 92%,
+      transparent
+    );
+  }
+
+  /* Small uppercase label used for eyebrows and field names. */
+  .eyebrow {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-slate-dim);
+  }
+
+  /* Measurements always render in mono — that is what reads as forensic. */
+  .measure {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hairline {
+    border-color: var(--color-ink-line);
+  }
+}
+
+/* Respect reduced motion globally rather than per-component. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scrollbars, tuned to the room rather than left default-bright. */
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-line);
+    border-radius: 99px;
+    border: 2px solid var(--color-ink);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-line-bright);
+  }
+}

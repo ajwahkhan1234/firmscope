@@ -137,12 +137,33 @@ There is also a no-LLM smoke test for the deterministic layer:
 npx tsx scripts/test-audit.mts https://some-law-firm.com
 ```
 
+## Secrets
+
+No key is in this repository, and none needs to be. `.env.example` documents
+the three variables with blank values; the real ones live only in Vercel's
+environment variables, injected at runtime.
+
+Two details that matter:
+
+- **`SUPABASE_SERVICE_ROLE_KEY` is not prefixed with `NEXT_PUBLIC_`.** Next.js
+  only exposes `NEXT_PUBLIC_*` to the browser bundle, so the service-role key —
+  which bypasses row-level security entirely — stays server-side. The browser
+  never talks to Supabase at all; every read and write goes through a route
+  handler.
+- **`.gitignore` ignores `.env*` but un-ignores `.env.example`**, so a local
+  env file cannot be committed by accident.
+
+To run it yourself, copy `.env.example` to `.env.local` and fill in your own
+keys. Nothing here is shared.
+
 ## Deploying to Vercel
 
 1. Push to GitHub, import the repo in Vercel.
 2. Add `GOOGLE_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, and
    `SUPABASE_SERVICE_ROLE_KEY` under Settings → Environment Variables.
-3. Deploy.
+   Do not commit them to the repo — Next.js loads a committed `.env`, which is
+   how secrets end up in version control.
+3. Deploy. Changing an environment variable later requires a redeploy.
 
 The teardown route sets `maxDuration = 300`. On Hobby with Fluid Compute that is
 enough for a full run; a typical run is 60–90s.
